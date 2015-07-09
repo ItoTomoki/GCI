@@ -1,0 +1,49 @@
+<gexf version="1.1" xmlns="http://www.gexf.net/1.1draft" xmlns:viz="http://www.gexf.net/1.1draft/viz" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2001/XMLSchema-instance">
+  <graph defaultedgetype="directed" mode="static">
+    <attributes class="edge" mode="static">
+      <attribute id="1" title="networkx_key" type="integer" />
+    </attributes>
+    <attributes class="node" mode="static">
+      <attribute id="0" title="sex" type="string" />
+    </attributes>
+    <nodes>
+      <node id="A" label="A">
+        <attvalues>
+          <attvalue for="0" value="Male" />
+        </attvalues>
+      </node>
+      <node id="C" label="C">
+        <attvalues>
+          <attvalue for="0" value="Male" />
+        </attvalues>
+      </node>
+      <node id="B" label="B">
+        <attvalues>
+          <attvalue for="0" value="Female" />
+        </attvalues>
+      </node>
+    </nodes>
+    <edges>
+      <edge id="0" source="A" target="B" weight="1.0">
+        <attvalues>
+          <attvalue for="1" value="0" />
+        </attvalues>
+      </edge>
+      <edge id="1" source="C" target="A" weight="1.0">
+        <attvalues>
+          <attvalue for="1" value="0" />
+        </attvalues>
+      </edge>
+      <edge id="2" source="B" target="A" weight="1.0">
+        <attvalues>
+          <attvalue for="1" value="0" />
+        </attvalues>
+      </edge>
+      <edge id="3" source="B" target="C" weight="1.0">
+        <attvalues>
+          <attvalue for="1" value="0" />
+        </attvalues>
+      </edge>
+    </edges>
+  </graph>
+</gexf>
