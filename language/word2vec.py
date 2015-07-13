@@ -5,7 +5,7 @@ model = word2vec.Word2Vec(data, size=50)
 p = raw_input().decode("utf-8")
 n = raw_input().decode("utf-8")
 
-out = model.most_similar(positive=[u'金融'])
+out = model.most_similar(positive=[u'銀行'])
 for x in out:print x[0],x[1]
 out = model.most_similar(positive=[x],negative=[y])
 for x in out:print x[0],x[1]
