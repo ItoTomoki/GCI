@@ -1,12 +1,11 @@
 #encoding:utf8
-#commenttext =  uni_text.decode('unicode_escape')
-import json
 import os
 from ast import literal_eval
 import re
 import MeCab
 import unicodedata
 import sys
+import ngram
 
 
 argvs = sys.argv  # コマンドライン引数を格納したリストの取得
@@ -20,11 +19,12 @@ files = os.listdir('../data/tcserv.nii.ac.jp/access/tomokiitoupcfax@gmail.com/83
 thread = {}
 thread[ID] = {}
 kigou = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~"
+index = ngram.NGram(N=2)
 for nfile in files:
 	filepass = ('../data/tcserv.nii.ac.jp/access/tomokiitoupcfax@gmail.com/832c5b059b15f647/nicocomm/data/thread/' + ID +'/' +  str(nfile))
 	f = open(filepass)
 	lines2 = f.readlines() # 1行毎にファイル終端まで全て読む(改行文字も含まれる)
-	data1 = f.read()  # ファイル終端まで全て読んだデータを返す
+	#data1 = f.read()  # ファイル終端まで全て読んだデータを返す
 	f.close()
 	Lines2 = {}
 	count = 0
@@ -53,10 +53,10 @@ for nfile in files:
 		#print Lines2[count]['comment']
 		count += 1
 	thread[ID][nfile] = Lines2
-tagger = MeCab.Tagger( '-Owakati -u /usr/local/Cellar/mecab/0.996/lib/mecab/dic/ipadic/ncnc.dic')
+#tagger = MeCab.Tagger( '-Owakati -u /usr/local/Cellar/mecab-ipadic/2.7.0-20070801/lib/mecab/dic/ipadic/ncnc.dic')
 #commentfiles = os.listdir('comment')
 for j in thread[ID].keys():
-	filename = ("comment2_" + ID + "/" + j[0:-3] +"txt")
+	filename = ("comment2_bigram" + ID + "/" + j[0:-3] +"txt")
 	fo = file(filename,'w')
 	print filename
 	commenttext = ''
@@ -80,39 +80,16 @@ for j in thread[ID].keys():
 		pluscomment = pluscomment.replace("°", "")
 		pluscomment = pluscomment.replace("w", "")
 		pluscomment = pluscomment.replace("null", "")
+		pluscomment = ((((pluscomment.replace("ーー","ー")).replace("ーー","ー")).replace("ーー","ー")).replace("ーー","ー")).replace("ーー","ー")
 		pluscomment = pluscomment.replace("\n", "")
 		pluscomment = pluscomment.replace("\t", "")
 		pluscomment = pluscomment.replace(" ", "")
 		pluscomment = pluscomment.replace("　", "")
 		pluscomment = re.sub(re.compile("[!-/:-@[-`{-~]"), '', pluscomment)
 		if pluscomment != '':
-			pluscomment = tagger.parse(pluscomment)
-			pluscomment = pluscomment.replace("\n", " ")
-			fo.write(pluscomment)
-	thread[ID][j]["comment"] = commenttext
+			#pluscomment = tagger.parse(pluscomment)
+			for text in list(index.ngrams(index.pad(pluscomment.decode("utf-8")))):
+				fo.write(text.encode("utf-8") + " ")
+	#thread[ID][j]["comment"] = 
 	fo.write("\n")
 	fo.close()
-
-files = os.listdir('../data/tcserv.nii.ac.jp/access/tomokiitoupcfax@gmail.com/832c5b059b15f647/nicocomm/data/video')
-for nfile in files[1:2]:
-	#print file
-	nfile = (ID + ".dat")
-	filepass = ('../data/tcserv.nii.ac.jp/access/tomokiitoupcfax@gmail.com/832c5b059b15f647/nicocomm/data/video/' + str(nfile))
-	f = open(filepass)
-	lines2 = f.readlines() # 1行毎にファイル終端まで全て読む(改行文字も含まれる)
-	f.close()
-	Lines2 = {}
-	count = 0
-	
-	for line in lines2:
-		try:
-			Lines2[count] = literal_eval(line)
-			print Lines2[count]["video_id"], Lines2[count]["title"].decode('unicode_escape')
-			thread[ID][(Lines2[count]["video_id"] + ".dat")]["title"] = Lines2[count]["title"].decode('unicode_escape')
-			count += 1
-		except:
-			print line
-
-
-
-
