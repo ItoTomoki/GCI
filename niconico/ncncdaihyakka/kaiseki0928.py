@@ -45,6 +45,7 @@ tfidfvectorinfo = {}
 sample = tfs.toarray().shape[0]
 for n in range(0,sample):
 	tfidfvectorinfo[idlist[n]] = maketfidfvec(n,100,100000000)
+
 tfidfdata = createtfidfvectorMat(100,100000000)
 
 k2 = PredictAndAnalyze(data = tfidfdata,target = target2,clf_cv =linear_model.LogisticRegression(C=1e5))
@@ -61,7 +62,7 @@ for narray in range(2,10):
 	tfidfvectorinfo = {}
 	sample = tfs.toarray().shape[0]
 	for n in range(0,sample):
-		tfidfvectorinfo[idlist[n]] = maketfidfvec(n,narray * 100 - 100,narray * 100)
+		tfidfvectorinfo[idlist[n]] = maketfidfvec(n)
 	tfidfdata = createtfidfvectorMat(narray * 100 - 100,narray * 100 + 100)
 	print narray * 100
 	k2 = PredictAndAnalyze(data2,target2,clf_cv =linear_model.LogisticRegression(C=1e1))

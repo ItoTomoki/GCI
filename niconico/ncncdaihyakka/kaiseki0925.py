@@ -195,6 +195,7 @@ def createtvectorMat(mincomment,maxcomment):
 scores = []
 knn = neighbors.KNeighborsClassifier(n_neighbors=10) #metric='manhattan'
 classifier = svm.SVC(kernel='linear', probability=True)#,class_weight={0:3,2:1})
+logreg = linear_model.LogisticRegression(C=1e1)
 """
 for j in range(0,10):
     perm = np.random.permutation(len(target))
@@ -240,7 +241,7 @@ def PredictAndAnalyze(data = data,target = target,clf_cv = svm.SVC(kernel='linea
         y_true = y_test
         y_trueall = y_trueall + list(y_true)
         y_pridictall = y_pridictall  + list(y_pred)
-        ifprint == True:
+        if ifprint == True:
             print(classification_report(y_true, y_pred))
         if checkauc == True:
             y_pred_cv = clf_cv.predict_proba(X_test)[:, 1]
@@ -252,8 +253,8 @@ def PredictAndAnalyze(data = data,target = target,clf_cv = svm.SVC(kernel='linea
     return y_trueall, y_pridictall
 
 
-target2 = createtargetarray(100,300,10000)
-data2 = createtvectorMat(100,300)
+target2 = createtargetarray(100,1000000,10000,30000)
+data2 = createtvectorMat(100,1000000)
 k0 = PredictAndAnalyze(data2,target2,clf_cv = svm.SVC(kernel='linear', probability=True,class_weight={0:2,1:1}))
 k1 = PredictAndAnalyze(data2,target2,clf_cv = neighbors.KNeighborsClassifier(n_neighbors=10))
 k2 = PredictAndAnalyze(data2,target2,clf_cv =linear_model.LogisticRegression(C=1e1))
@@ -287,7 +288,7 @@ def makewordlist(ID,video_id,mincommentlines,maxcommentlines):
         node = node.next
     return word2freq,wordlist[0:-1]
 
-def makeTfidfTextList(mincoumment,maxcomment):
+def makeTfidfTextList(mincoumment,maxcomment,mincommentlines,maxcommentlines):
     word2freqlist = {}
     wordlist = {}
     for ID in ["0000","0001","0002","0003"]:
@@ -296,7 +297,7 @@ def makeTfidfTextList(mincoumment,maxcomment):
         for j in textinfo[ID].keys():
             if (thread[ID][(str(j) + ".dat")]["comment_counter"] > mincoumment) & (thread[ID][(str(j) + ".dat")]["comment_counter"] < maxcomment):
                 try:
-                    word2freqlist[ID][j], wordlist[ID][j] = makewordlist(ID,j,mincoumment,maxcomment)
+                    word2freqlist[ID][j], wordlist[ID][j] = makewordlist(ID,j,mincommentlines,maxcommentlines)
                 except:
                     print ID,j
     tfidfTextList = {}
@@ -329,9 +330,8 @@ feature_names = tfidf.get_feature_names()
 n = 0
 idlist = TfidfTextList.keys()
 
-(TfidfTextList, word2freqlist) = makeTfidfTextList(mincomment,maxcomment)
-tfs = tfidf.fit_transform(TfidfTextList.values())
-def maketfidfvec(number,mincomment,maxcomment):
+
+def maketfidfvec(number):
     feature_names = tfidf.get_feature_names()
     idlist = TfidfTextList.keys()
     d = dict(zip(feature_names, tfs[number].toarray().T))
