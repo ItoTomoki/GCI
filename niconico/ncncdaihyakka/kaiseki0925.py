@@ -14,16 +14,26 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import precision_recall_curve
 from sklearn.feature_extraction.text import TfidfVectorizer
+import pickle
 
 #modelwiki = word2vec.Word2Vec.load("wiki1-4.model")
 #data = word2vec.Text8Corpus('allcomment.txt')
-data = word2vec.Text8Corpus('allcomment2kaiseiki.txt')
+#data = word2vec.Text8Corpus('allcomment2kaiseiki.txt')
 #modelnico = word2vec.Word2Vec(data, size=50)
 #modelnico = word2vec.Word2Vec.load("allcomment2.model")
 #modelnico = word2vec.Word2Vec.load("allcomment1.model")
-modelnico = word2vec.Word2Vec.load("allcomment2kaiseiki.model") #コメントをスペースでつなぐ改行正規化済み
+#modelnico = word2vec.Word2Vec.load("allcomment2kaiseiki.model") #コメントをスペースでつなぐ改行正規化済み
 #modelnico = word2vec.Word2Vec.load("allcomment2.model")　#コメントをスペースでつなぐ改行正規化なし
 #modelnico = word2vec.Word2Vec.load("allcomment_kai.model") #コメントをひとつずつ改行正規化済み
+
+#modelnico = word2vec.Word2Vec.load("models/allcomment2kaiseiki.model")
+#modelnico = word2vec.Word2Vec.load("allcomment_2kai.model")
+#modelnico = word2vec.Word2Vec.load("models/allcomment2.model")
+#modelnico = word2vec.Word2Vec.load("models/allcomment2bigram_kai.model")
+#modelnico = word2vec.Word2Vec.load("models/allcomment2bigram.model")
+#modelnico = word2vec.Word2Vec.load("models/allcomment_kai.model")
+#modelnico = word2vec.Word2Vec.load("allcomment_2kai.model")
+modelnico = word2vec.Word2Vec.load("allcomment2_kai0000_0006.model")
 model = modelnico
 """
 word = [u"腹筋"]
@@ -87,19 +97,43 @@ def createvector(video_id,ID="0000",mincount = 0,maxcount = -1):
             try:
                 data += (datalines[n] + " ")
             except:
-                print len(datalines),ID,video_id
+                #print len(datalines),ID,video_id
+                break
+        v = makevec(morphological_analysis(data))
+        return v
+
+def createvector2(video_id,ID="0000",count = 100):
+    if video_id == "sm9":
+        return np.zeros(len(model[model.vocab.keys()[0]]))
+    else:
+        #filename = ("comment2_" + ID + "/" + str(video_id) + ".txt")
+        #filename = ("comment2_kai" + ID + "/" + str(video_id) + ".txt")
+        #filename = ("comment2_bigram" + ID + "/" + str(video_id) + ".txt")
+        #filename = ("comment2bigram_kai" + ID + "/" + str(video_id) + ".txt")
+        filename = ("comment_kai" + ID + "/" + str(video_id) + ".txt")
+        f = open(filename)
+        data = f.read()
+        f.close()
+        datalines = data.split('\n')
+        data = ""
+        counts = (len(datalines)/count)
+        for n in range(0,count):
+            try:
+                data += (datalines[(n * counts)] + " ")
+            except:
+                #print len(datalines),ID,video_id
                 break
         v = makevec(morphological_analysis(data))
         return v
 
 vectorinfo = {}
-
-files = os.listdir('../data/tcserv.nii.ac.jp/access/tomokiitoupcfax@gmail.com/832c5b059b15f647/nicocomm/data/video')
+"""
+filepass = ('../data/tcserv.nii.ac.jp/access/tomokiitoupcfax@gmail.com/832c5b059b15f647/nicocomm/data/thread/')
 textinfo = {}
 thread = {}
 count = 0
 #for file in files[1:2]:
-for ID in ["0000","0001","0002","0003"]:
+for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
     #print file
     filename = ID + ".dat"
     filepass = '../data/tcserv.nii.ac.jp/access/tomokiitoupcfax@gmail.com/832c5b059b15f647/nicocomm/data/video/' + str(filename)
@@ -121,39 +155,59 @@ for ID in ["0000","0001","0002","0003"]:
         #thread["0000"][(Lines2[count]["video_id"] + ".dat")]["title"] = Lines2[count]["title"].decode('unicode_escape')
         textinfo[ID][Lines2[count]["video_id"]] = Lines2[count]["title"].decode('unicode_escape')
         count += 1
+f = file("textinfo0000-0006.dump","w")
+pickle.dump(textinfo,f)
+f.close()
+f = file("thread0000-0006.dump","w")
+pickle.dump(thread,f)
+f.close()
+"""
+g = file("textinfo0000-0006.dump","r")
+textinfo = pickle.load(g)
+g.close()
+g = file("thread0000-0006.dump","r")
+thread = pickle.load(g)
+g.close()
 
-for ID in ["0000","0001","0002","0003"]:
+for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
     vectorinfo[ID] = {}
     for j in textinfo[ID].keys():
         #print j
         try:
-            vectorinfo[ID][j] = createvector(video_id = j, ID = ID,mincount = 0,maxcount = 100)
+            #vectorinfo[ID][j] = createvector(video_id = j, ID = ID,mincount = 0,maxcount = 10000000)
+            vectorinfo[ID][j] = createvector2(video_id = j, ID = ID,count = 500)
         except:
             #vectorinfo[ID][j] = np.zeros(len(model[model.vocab.keys()[0]]))
             print ID,j
-
-
+"""
+g = file("comment2_Data/vectorinfo.dump","r")
+g = file("comment2_bigram_Data/vectorinfo.dump","r")
+g = file("comment2_kai_Data/vectorinfo.dump","r")
+g = file("comment2bigram_kai_Data/vectorinfo.dump","r")
+g = file("comment_kai_Data/vectorinfo.dump","r")
+vectorinfo = pickle.load(g)
+g.close()
+"""
 l = {}
-for ID in ["0000","0001","0002","0003"]:
+for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
     l[ID] = vectorinfo[ID].keys()
 
 
-for ID in ["0000","0001","0002","0003"]:
+for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
     for j in range(0,len(l[ID])):
         if (ID == "0000") & (j == 0):
             vectorMat = vectorinfo["0000"][l["0000"][0]]
         else:
             vectorMat = np.c_[vectorMat,vectorinfo[ID][l[ID][j]]]
+
 data = vectorMat.T
-
-
 
 #機会学習
 #34544は平均値で10760.0は中央値（再生回数）
 from sklearn import neighbors,svm,linear_model
 from sklearn.metrics import classification_report
 target = []
-for ID in ["0000","0001","0002","0003"]:
+for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
     for j in range(0,len(l[ID])):
         if thread[ID][(str(l[ID][j]) + ".dat")]["view_counter"] > 34544:#10760.0:#34544:
             target.append(0)
@@ -165,10 +219,11 @@ for ID in ["0000","0001","0002","0003"]:
 target = np.array(target)
 
 
+
 #コメント数で制限
 def createtargetarray(mincomment,maxcomment,threadviewcount1,threadviewcount2):
     target2 = []
-    for ID in ["0000","0001","0002","0003"]:
+    for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
         for j in range(0,len(l[ID])):
             if (thread[ID][(str(l[ID][j]) + ".dat")]["comment_counter"] > mincomment) & (thread[ID][(str(l[ID][j]) + ".dat")]["comment_counter"] < maxcomment):
                 if thread[ID][(str(l[ID][j]) + ".dat")]["view_counter"] > threadviewcount2:
@@ -178,10 +233,31 @@ def createtargetarray(mincomment,maxcomment,threadviewcount1,threadviewcount2):
                 else:
                     target2.append(2)
     return np.array(target2)
-
-def createtvectorMat(mincomment,maxcomment):
+#２値分類
+def createtargetarray2(mincomment,maxcomment,threadviewcount):
+    target2 = []
+    for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
+        for j in range(0,len(l[ID])):
+            if (thread[ID][(str(l[ID][j]) + ".dat")]["comment_counter"] > mincomment) & (thread[ID][(str(l[ID][j]) + ".dat")]["comment_counter"] < maxcomment):
+                if thread[ID][(str(l[ID][j]) + ".dat")]["view_counter"] > threadviewcount:
+                    target2.append(0)
+                else:
+                    target2.append(1)
+    return np.array(target2)
+#コメント数で分類
+def createtargetarraycomment(mincomment,threadviewcount):
+    target2 = []
+    for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
+        for j in range(0,len(l[ID])):
+            if thread[ID][(str(l[ID][j]) + ".dat")]["comment_counter"] > mincomment:
+                if thread[ID][(str(l[ID][j]) + ".dat")]["comment_counter"] > threadviewcount:
+                    target2.append(0) 
+                else:
+                    target2.append(1)
+    return np.array(target2)
+def createtvectorMat(mincomment,maxcomment,vectorinfo):
     vectorMat2 = np.array([])
-    for ID in ["0000","0001","0002","0003"]:
+    for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
         for j in range(0,len(l[ID])):
             if (thread[ID][(str(l[ID][j]) + ".dat")]["comment_counter"] > mincomment) & (thread[ID][(str(l[ID][j]) + ".dat")]["comment_counter"] < maxcomment):
                 if vectorMat2.shape[0] == 0:
@@ -190,7 +266,10 @@ def createtvectorMat(mincomment,maxcomment):
                     vectorMat2 = np.c_[vectorMat2,vectorinfo[ID][l[ID][j]]]
     return(vectorMat2.T)
 
-
+#10760.0と34544
+target2 = createtargetarraycomment(500,5000)
+target2 = createtargetarray(100,10000000,10760.0,34544)
+data2 = createtvectorMat(100,100000000,vectorinfo)
 
 scores = []
 knn = neighbors.KNeighborsClassifier(n_neighbors=10) #metric='manhattan'
@@ -221,20 +300,24 @@ for j in range(0,10):
 #交差検定
 from sklearn import cross_validation
 from sklearn.cross_validation import KFold
-scores = cross_validation.cross_val_score(knn, data, target, cv=5)
+scores = cross_validation.cross_val_score(knn, data2, target2, cv=5)
 print np.mean(scores)
-scores = cross_validation.cross_val_score(classifier, data, target, cv=5)
+scores = cross_validation.cross_val_score(classifier, data2, target2, cv=5)
 print np.mean(scores)
-scores = cross_validation.cross_val_score(logreg, data, target, cv=5)
+scores = cross_validation.cross_val_score(logreg, data2, target2, cv=5)
 print np.mean(scores)
 
-def PredictAndAnalyze(data = data,target = target,clf_cv = svm.SVC(kernel='linear', probability=True),checkauc = False,ifprint = False):
+def PredictAndAnalyze(data = data,target = target2,clf_cv = svm.SVC(kernel='linear', probability=True),checkauc = False,ifprint = False,balancing = True):
     kf = KFold(len(target), n_folds=10, shuffle=True)
     aucs = []
     y_trueall = []
     y_pridictall = []
     for train, val in kf:
         X_train, y_train = np.array(data)[train], np.array(target)[train]
+        if balancing == True:
+            length = min([len(y_train[y_train == 0]),len(y_train[y_train == 1]),len(y_train[y_train == 2])])
+            X_train = np.r_[X_train[y_train == 0][0:length],X_train[y_train == 1][0:length],X_train[y_train == 2][0:length]]
+            y_train = np.r_[y_train[y_train == 0][0:length],y_train[y_train == 1][0:length],y_train[y_train == 2][0:length]]
         X_test, y_test = np.array(data)[val], np.array(target)[val]
         clf_cv.fit(X_train, y_train)
         y_pred = clf_cv.predict(X_test)
@@ -252,14 +335,193 @@ def PredictAndAnalyze(data = data,target = target,clf_cv = svm.SVC(kernel='linea
     print(classification_report(y_trueall, y_pridictall))
     return y_trueall, y_pridictall
 
+def PredictAndAnalyze2(data,target,clf_cv = svm.SVC(kernel='linear', probability=True),checkauc = False,ifprint = False,balancing = True):
+    aucs = []
+    y_trueall = []
+    y_pridictall = []
+    length = min([len(target[target == 0]),len(target[target == 1]),len(target[target == 2])])
+    data = np.r_[data[target == 0][0:length],data[target == 1][0:length],data[target == 2][0:length]]
+    target = np.r_[target[target == 0][0:length],target[target == 1][0:length],target[target == 2][0:length]]
+    """
+    length = min([len(target[target == 0]),len(target[target == 1])])
+    data = np.r_[data[target == 0][0:length],data[target == 1][0:length]]
+    target = np.r_[target[target == 0][0:length],target[target == 1][0:length]]
+    """
+    kf = KFold(len(target), n_folds=10, shuffle=True)
+    vmats = np.array([])
+    for train, val in kf:
+        X_train, y_train = np.array(data)[train], np.array(target)[train]
+        X_test, y_test = np.array(data)[val], np.array(target)[val]
+        clf_cv.fit(X_train, y_train)
+        y_pred = clf_cv.predict(X_test)
+        vmat = clf_cv.coef_[0]
+        if vmats.shape[0] == 0:
+            vmats = vmat
+        else:
+            vmats = np.c_[vmats,vmat]
+        y_true = y_test
+        y_trueall = y_trueall + list(y_true)
+        y_pridictall = y_pridictall  + list(y_pred)
+        if ifprint == True:
+            print(classification_report(y_true, y_pred))
+        if checkauc == True:
+            y_pred_cv = clf_cv.predict_proba(X_test)[:, 1]
+            auc = roc_auc_score(y_test, y_pred_cv)
+            aucs.append(auc)
+    if checkauc == True:
+        print np.mean(aucs), np.std(aucs)
+    print(classification_report(y_trueall, y_pridictall))
+    return y_trueall, y_pridictall,vmats
 
-target2 = createtargetarray(100,1000000,10000,30000)
-data2 = createtvectorMat(100,1000000)
-k0 = PredictAndAnalyze(data2,target2,clf_cv = svm.SVC(kernel='linear', probability=True,class_weight={0:2,1:1}))
-k1 = PredictAndAnalyze(data2,target2,clf_cv = neighbors.KNeighborsClassifier(n_neighbors=10))
-k2 = PredictAndAnalyze(data2,target2,clf_cv =linear_model.LogisticRegression(C=1e1))
+data2 = createtvectorMat(500,100000000,vectorinfo2)
+target2 = createtargetarray(500,10000000,10760.0,34544)
+target2 = createtargetarray2(500,100000000,34544)
+target2 = createtargetarraycomment(0,2170)
+
+k0 = PredictAndAnalyze2(data = data2,target = target2,clf_cv = svm.SVC(kernel='rbf', probability=True))#,class_weight={0:4,1:1}))
+#k1 = PredictAndAnalyze2(data2,target2,clf_cv = neighbors.KNeighborsClassifier(n_neighbors=10))
+k2 = PredictAndAnalyze2(data2,target2,clf_cv =linear_model.LogisticRegression(C=1e1))
 
 
+
+#vector作成
+vectorinfo2 = {}
+for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
+        vectorinfo2[ID] = {}
+        for j in textinfo[ID].keys():
+            #print j
+            try:
+                vectorinfo2[ID][j] = createvector(video_id = j, ID = ID,mincount = -500,maxcount = 0)
+            except:
+                #vectorinfo[ID][j] = np.zeros(len(model[model.vocab.keys()[0]]))
+                print ID,j 
+data2 = createtvectorMat(500,100000000,vectorinfo2)
+target2 = createtargetarray(500,10000000,10760.0,34544)
+target2 = createtargetarray2(500,10000000,34544)
+target2 = createtargetarraycomment(100,2170)
+
+k0 = PredictAndAnalyze2(data2,target2,clf_cv = svm.SVC(kernel='linear', probability=True))
+k2 = PredictAndAnalyze2(data2,target2,clf_cv =linear_model.LogisticRegression(C=1e1))
+#一貫性があるかチェック
+M = k2[2].T
+M1 = k0[2].T
+チョー░░
+for n1 in range(0,10):
+    for n2 in range(n1,10):
+        print n1,n2,np.dot((M[n1]/np.linalg.norm(M[n1])),(M[n2]/np.linalg.norm(M[n2])))
+meanvec = np.zeros(len(model[model.vocab.keys()[0]]))
+for n in range(0,10):
+    meanvec = meanvec + (M[n]/np.linalg.norm(M[n]))
+meanvec = meanvec/np.linalg.norm(meanvec)
+
+meanvec1 = np.zeros(len(model[model.vocab.keys()[0]]))
+for n in range(0,10):
+    meanvec1 = meanvec1 + (M1[n]/np.linalg.norm(M1[n]))
+meanvec1 = meanvec1/np.linalg.norm(meanvec1)
+#
+#重みの大きい次元の抽出
+featurearray = {}
+for n in range(0,20):
+    featurearray[n] = abs(meanvec[n])
+featurearray1 = []
+for n in range(0,10):
+    if meanvec1[n] > 0.1:
+        featurearray1.append(n)
+voclist = model.vocab.keys()
+
+vecinfo = sorted(featurearray.items(), key=lambda x: x[1],reverse = True)
+for num in range(0,10):
+    n = vecinfo[num]
+    wordrank = {}
+    v = np.zeros(len(model[model.vocab.keys()[0]]))
+    v[n[0]] = 1.0
+    for k in range(0,len(voclist)):
+        vector = (wordvec(voclist[k],model))
+        if (np.dot(v, vector) > 0.1) | (np.dot(v, vector) < -0.1):
+            wordrank[(voclist[k])] = np.dot(v, vector)
+    k = sorted(wordrank.items(), key=lambda x: x[1],reverse = True)
+    print "==========",n[0],meanvec[n[0]],"=========="
+    for m in k[0:10]:
+        print m[0],m[1]
+    k = sorted(wordrank.items(), key=lambda x: x[1],reverse = False)
+    print "==========",n[0],meanvec[n[0]],"=========="
+    for m in k[0:10]:
+        print m[0],m[1]
+"""
+vecinfo = sorted(featurearray.items(), key=lambda x: x[1],reverse = True)
+for num in sorted(range(-10,0),reverse = True):
+    n = vecinfo[num]
+    wordrank = {}
+    v = np.zeros(len(model[model.vocab.keys()[0]]))
+    v[n[0]] = 1.0
+    for k in range(0,len(voclist)):
+        vector = (wordvec(voclist[k],model))
+        if (np.dot(v, vector) > 0.1) | (np.dot(v, vector) < -0.1):
+            wordrank[(voclist[k])] = np.dot(v, vector)
+    k = sorted(wordrank.items(), key=lambda x: x[1],reverse = True)
+    print "==========",n,  "=========="
+    for m in k[0:20]:
+        print m[0],m[1]
+    k = sorted(wordrank.items(), key=lambda x: x[1],reverse = False)
+    print "==========",n,"=========="
+    for m in k[0:20]:
+        print m[0],m[1]
+"""
+
+vecinfo1 = sorted(featurearray1.items(), key=lambda x: x[1],reverse = True)
+for n in vecinfo:
+    wordrank = {}
+    v = np.zeros(len(model[model.vocab.keys()[0]]))
+    v[n[0]] = 1.0
+    for k in range(0,len(voclist)):
+        vector = (wordvec(voclist[k],model))
+        if np.dot(v, vector) > 0.1:
+            wordrank[(voclist[k])] = np.dot(v, vector)
+    k = sorted(wordrank.items(), key=lambda x: x[1],reverse = True)
+    print "==========",n, meanvec[n[0]], "=========="
+    for m in k[0:10]:
+        print m[0],m[1]
+
+wordrank = {}
+v = np.zeros(len(model[model.vocab.keys()[0]]))
+v[2] = 1.0
+for k in range(0,len(voclist)):
+    vector = (wordvec(voclist[k],model))
+    if np.dot(v, vector) > 0.2:
+        wordrank[(voclist[k])] = np.dot(v, vector)
+
+voclist = modelnico.vocab.keys()
+wordrank = {}
+for k in range(0,len(voclist)):
+    vector = (wordvec(voclist[k],model))
+    if (np.dot(meanvec, vector) > 0.1) | (np.dot(meanvec, vector) < -0.1):
+        wordrank[(voclist[k])] = np.dot(meanvec, vector)
+
+
+"""
+for k in range(0,len(voclist)):
+    for j in range(k,len(voclist)):
+        vector = (wordvec(voclist[k],model) + wordvec(voclist[j],model))
+        vector = (vector/np.linalg.norm(vector))
+        if np.dot(meanvec, vector) > 0.3:
+            print (voclist[k] + " " + voclist[j])
+            wordrank[(voclist[k] + " " + voclist[j])] = np.dot(meanvec, vector)
+"""
+k = sorted(wordrank.items(), key=lambda x: x[1],reverse = True)
+for m in k[0:20]:
+    print m[0],m[1]
+wordrank2 = {}
+voclist2 = wordrank.keys()
+for k in range(0,len(voclist2 = wordrank.keys()):
+    for j in range(k,len(voclist2 = wordrank.keys()):
+        vector = (wordvec(voclist2[k],model) + wordvec(voclist2[j],model))
+        vector = (vector/np.linalg.norm(vector))
+        if np.dot(meanvec, vector) > 0.3:
+            print (k + " " + j)
+            wordrank2[(k + " " + j)] = np.dot(meanvec, vector)
+k = sorted(wordrank2.items(), key=lambda x: x[1],reverse = True)
+for m in k[0:100]:
+    print m[0],m[1]
 #tf-idf
 def makewordlist(ID,video_id,mincommentlines,maxcommentlines):
     #filename = ("comment2_" + ID + "/" + str(video_id) + ".txt")
@@ -287,11 +549,10 @@ def makewordlist(ID,video_id,mincommentlines,maxcommentlines):
         word2freq[node.surface] += 1
         node = node.next
     return word2freq,wordlist[0:-1]
-
 def makeTfidfTextList(mincoumment,maxcomment,mincommentlines,maxcommentlines):
     word2freqlist = {}
     wordlist = {}
-    for ID in ["0000","0001","0002","0003"]:
+    for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
         word2freqlist[ID] = {}
         wordlist[ID] = {}
         for j in textinfo[ID].keys():
@@ -302,7 +563,7 @@ def makeTfidfTextList(mincoumment,maxcomment,mincommentlines,maxcommentlines):
                     print ID,j
     tfidfTextList = {}
     voc = model.vocab.keys()
-    for ID in ["0000","0001","0002","0003"]:
+    for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
         print ID
         for n in wordlist[ID].keys():
             tfidfTextList[n] = ""
@@ -330,13 +591,10 @@ feature_names = tfidf.get_feature_names()
 n = 0
 idlist = TfidfTextList.keys()
 
-
-def maketfidfvec(number):
-    feature_names = tfidf.get_feature_names()
-    idlist = TfidfTextList.keys()
+def maketfidfvec(number,feature_names,tfs,idlist,word2freqlist):
     d = dict(zip(feature_names, tfs[number].toarray().T))
     videoid = idlist[number]
-    for ID in ["0000","0001","0002","0003"]:
+    for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
         try:
             k = word2freqlist[ID][videoid]
             break
@@ -382,9 +640,9 @@ f = open('tfidfvectorinfo.dump','w')
 pickle.dump(tfidfvectorinfo,f)
 f.close()
 """
-def createtfidfvectorMat(mincomment,maxcomment):
+def createtfidfvectorMat(mincomment,maxcomment,tfidfvectorinfo):
     tfidfvectorMat = np.array([])
-    for ID in ["0000","0001","0002","0003"]:
+    for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
         for j in range(0,len(l[ID])):
             if (thread[ID][(str(l[ID][j]) + ".dat")]["comment_counter"] > mincomment) & (thread[ID][(str(l[ID][j]) + ".dat")]["comment_counter"] < maxcomment):
                 if (tfidfvectorMat.shape[0] == 0):
@@ -392,12 +650,10 @@ def createtfidfvectorMat(mincomment,maxcomment):
                 else:
                     tfidfvectorMat = np.c_[tfidfvectorMat,tfidfvectorinfo[l[ID][j]]]
     return tfidfvectorMat.T
-
 tfidfdata = createtfidfvectorMat(1000,10000)
 
 k2 = PredictAndAnalyze(data = tfidfdata,target = target2,clf_cv =linear_model.LogisticRegression(C=1e5))
-k0 = PredictAndAnalyze(data = tfidfdata,target = target2,clf_cv = svm.SVC(kernel='linear', probability=True))
-
+k0 = PredictAndAnalyze(data = tfidfdata,target = target2,clf_cv = svm.SVC(kernel='linear', probability=True,class_weight = {0:1,1:1}))
 
 
 #サポートベクトル回帰
@@ -405,7 +661,7 @@ from sklearn import svm
 from sklearn import cross_validation
 
 viewcountlist = []
-for ID in ["0000","0001","0002","0003"]:
+for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
     for j in range(0,len(l[ID])):
         viewcountlist.append(thread[ID][(str(l[ID][j]) + ".dat")]["view_counter"])
 #データを6割をトレーニング、4割をテスト用とする
@@ -446,14 +702,24 @@ plt.show()
 
 result2 = result[0]
 result3 = result[0]
-for ID in ["0000","0001","0002","0003"]:
+for ID in for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
+    for j in range(0,len(l[ID])):
+        if (ID == "0000") & (j == 0):
+            vectorMat = vectorinfo["0000"][l["0000"][0]]
+        else:
+            vectorMat = np.c_[vectorMat,vectorinfo[ID][l[ID][j]]]
     for j in range(0,len(l[ID])):
         if thread[ID][(str(l[ID][j]) + ".dat")]["view_counter"] > 10000:#np.median(counters):
             result2 = np.c_[result2,result[j]]
         else:
             result3 = np.c_[result3,result[j]]
 
-for ID in ["0000","0001","0002","0003"]:
+for ID in for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
+    for j in range(0,len(l[ID])):
+        if (ID == "0000") & (j == 0):
+            vectorMat = vectorinfo["0000"][l["0000"][0]]
+        else:
+            vectorMat = np.c_[vectorMat,vectorinfo[ID][l[ID][j]]]
     for j in range(1,len(l[ID])):
         if thread[ID][(str(l[ID][j]) + ".dat")]["comment_counter"] > 2500:#np.median(counters):
             result2 = np.c_[result2,result[j]]
@@ -517,20 +783,45 @@ def selectTitleFromWord(wordarray):
             except:
                 continue
 
-#閲覧数
+#閲覧数とコメント数
 viewcounters = []
-for ID in ["0000","0001","0002","0003"]:
+for ID in for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
     for j in thread[ID].keys():
         viewcounters.append(thread[ID][j]["view_counter"])
 
 commentcounter = []
-for ID in ["0000","0001","0002","0003"]:
+for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
     for j in thread[ID].keys():
         commentcounter.append(thread[ID][j]['comment_counter'])
 
+commentviewcounter = []
+for ID in for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
+    for j in range(0,len(l[ID])):
+        if (ID == "0000") & (j == 0):
+            vectorMat = vectorinfo["0000"][l["0000"][0]]
+        else:
+            vectorMat = np.c_[vectorMat,vectorinfo[ID][l[ID][j]]]
+    for j in thread[ID].keys():
+        print j
+        commentviewcounter.append([thread[ID][j]['comment_counter'],thread[ID][j]["view_counter"]])
+commentviewcounter2 = sorted(commentviewcounter)
+plt.scatter(np.array(commentviewcounter2).T[0][0:6100],np.array(commentviewcounter2).T[1][0:6100])
+plt.xlabel("comment_counter")
+plt.ylabel("view_counter")
+plt.show()
+
+
 commentcounter2 = list(commentcounter)
 commentcounter2.sort(key=int)
+plt.title("0000-0003commentcount")
+plt.xlabel("rank")
+plt.ylabel("commentcount")
 plt.plot(commentcounter2)
+
+plt.title("0000-0003commentcount_under6000")
+plt.xlabel("rank")
+plt.ylabel("commentcount")
+plt.plot(commentcounter2[0:6000])
 
 counters2 = []
 for j in thread["0003"].keys():
