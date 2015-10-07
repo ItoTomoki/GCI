@@ -198,8 +198,8 @@ for name in names:
 	dense = vec2dense(sparse, num_topics)
 	lda_docs[name] = sparse
 	print name, ":", dense
-	print "\nTopics"
-	print ldamodel.print_topics()
+print "\nTopics"
+print ldamodel.print_topics()
 unit_vecs = {}
 for name in names:
 	vec = vec2dense(lsi_docs[name], num_topics)
