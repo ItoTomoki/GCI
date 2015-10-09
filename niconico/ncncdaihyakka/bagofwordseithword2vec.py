@@ -100,7 +100,7 @@ g = file("thread0000-0006.dump","r")
 thread = pickle.load(g)
 g.close()
 
-preprocessed_docs = maketextdoc(100,10000000,0,100)
+preprocessed_docs = maketextdoc(0,10000000,0,10000)
 docvec = {}
 
 for k in preprocessed_docs.keys():
@@ -112,6 +112,9 @@ for k in preprocessed_docs.keys():
 			docvec[k][labelnum] = (docvec[k][labelnum] + 1)
 		except:
 			continue
+
+for keys in docvec.keys():
+	docvec[k] = np.array(docvec[k]/np.linalg.norm(docvec[k]))
 
 from sklearn import cross_validation
 from sklearn.cross_validation import KFold
@@ -125,18 +128,26 @@ def PredictAndAnalyze2(data,target,clf_cv = svm.SVC(kernel='linear', probability
     length = min([len(target[target == 0]),len(target[target == 1]),len(target[target == 2])])
     data = np.r_[data[target == 0][0:length],data[target == 1][0:length],data[target == 2][0:length]]
     target = np.r_[target[target == 0][0:length],target[target == 1][0:length],target[target == 2][0:length]]
+    """
+    length = min([len(target[target == 0]),len(target[target == 1])])
+    data = np.r_[data[target == 0][0:length],data[target == 1][0:length]]
+    target = np.r_[target[target == 0][0:length],target[target == 1][0:length]]
+    """
     kf = KFold(len(target), n_folds=10, shuffle=True)
+    vmats = np.array([])
     for train, val in kf:
         X_train, y_train = np.array(data)[train], np.array(target)[train]
         X_test, y_test = np.array(data)[val], np.array(target)[val]
         clf_cv.fit(X_train, y_train)
         y_pred = clf_cv.predict(X_test)
+        vmat = clf_cv.coef_[0]
+        if vmats.shape[0] == 0:
+            vmats = vmat
+        else:
+            vmats = np.c_[vmats,vmat]
         y_true = y_test
         y_trueall = y_trueall + list(y_true)
         y_pridictall = y_pridictall  + list(y_pred)
-        vmat0 = clf_cv.coef_[0]
-        vmat1 = clf_cv.coef_[1]
-        vmat2 = clf_cv.coef_[2]        
         if ifprint == True:
             print(classification_report(y_true, y_pred))
         if checkauc == True:
@@ -146,7 +157,7 @@ def PredictAndAnalyze2(data,target,clf_cv = svm.SVC(kernel='linear', probability
     if checkauc == True:
         print np.mean(aucs), np.std(aucs)
     print(classification_report(y_trueall, y_pridictall))
-    return y_trueall, y_pridictall,vmat0,vmat1,vmat2
+    return y_trueall, y_pridictall,vmats
 
 commentarray = {}
 for ID in thread.keys():
@@ -171,7 +182,7 @@ def createtargetarray(mincomment,maxcomment,threadviewcount1,threadviewcount2,do
 			else:
 				target2.append(2)
 	return np.array(target2)
-
+"""
 def createtvectorMat(mincomment,maxcomment,docvec):
 	vectorMat2 = np.array([])
 	for name in docvec.keys():
@@ -181,7 +192,7 @@ def createtvectorMat(mincomment,maxcomment,docvec):
 				else:
 					vectorMat2 = np.c_[vectorMat2,docvec[name]]
 	return(vectorMat2.T)
-
+"""
 def createtvectorMat2(mincomment,maxcomment,docvec):
 	vectorMat2 = docvec.values()
 	vectorMat2 = np.array(vectorMat2)
@@ -195,20 +206,30 @@ def createtvectorMat2(mincomment,maxcomment,docvec):
 	vectorMat2 = vectorMat2[arrays]
 	return (vectorMat2)
 
-for name in docvec.keys():
-			if (commentarray[name] > 100) :
-				arrays.append(True)
-			else:
-				arrays.append(False)
 
 
-target2 = createtargetarray(100,10000000,10760.0,34544,docvec)
-data2 = createtvectorMat2(100,10000000,docvec)
+
+target2 = createtargetarray(0,10000000,10760.0,34544,docvec)
+data2 = createtvectorMat2(0,10000000,docvec)
 length = min([len(target2[target2 == 0]),len(target2[target2 == 1]),len(target2[target2 == 2])])
 data = np.r_[data2[target2 == 0][0:length],data2[target2 == 1][0:length],data2[target2 == 2][0:length]]
 
-k = PredictAndAnalyze2(data = data2,target = target2)
+k = PredictAndAnalyze2(data = data2,target = target2,clf_cv = svm.LinearSVC())
 
+M = k[2].T
+meanvec = np.zeros(1000)
+for j in range(10):
+	meanvec = meanvec + M[j]
+meanvec = meanvec/10.0
+array = {}
+for j in range(1000):
+	array[j] = abs(meanvec[j])
+rankarray = sorted(array.items(),key = lambda x:x[1],reverse = True)
+for v in rankarray[0:50]:
+	print v[0],v[1],meanvec[v[0]]
+	for key in word2vecdic.keys():
+		if word2vecdic[key] == v[0]:
+			print key
 
 clf_cv = svm.LinearSVC()
 clf_cv = svm.SVC(kernel='linear', probability=True)

@@ -106,25 +106,17 @@ def PredictAndAnalyze2(data,target,clf_cv = svm.SVC(kernel='linear', probability
     target = np.r_[target[target == 0][0:length],target[target == 1][0:length]]
     """
     kf = KFold(len(target), n_folds=10, shuffle=True)
-    vmats0 = np.array([])
-    vmats1 = np.array([])
-    vmats2 = np.array([])
+    vmats = np.array([])
     for train, val in kf:
         X_train, y_train = np.array(data)[train], np.array(target)[train]
         X_test, y_test = np.array(data)[val], np.array(target)[val]
         clf_cv.fit(X_train, y_train)
         y_pred = clf_cv.predict(X_test)
-        vmat0 = clf_cv.coef_[0]
-        vmat1 = clf_cv.coef_[1]
-        vmat2 = clf_cv.coef_[2]
-        if vmats0.shape[0] == 0:
-            vmats0 = vmat0
-            vmats1 = vmat1
-            vmats2 = vmat2
+        vmat = clf_cv.coef_[0]
+        if vmats.shape[0] == 0:
+            vmats = vmat
         else:
-            vmats0 = np.c_[vmats0,vmat0]
-            vmats1 = np.c_[vmats1,vmat1]
-            vmats2 = np.c_[vmats2,vmat2]
+            vmats = np.c_[vmats,vmat]
         y_true = y_test
         y_trueall = y_trueall + list(y_true)
         y_pridictall = y_pridictall  + list(y_pred)
@@ -137,10 +129,10 @@ def PredictAndAnalyze2(data,target,clf_cv = svm.SVC(kernel='linear', probability
     if checkauc == True:
         print np.mean(aucs), np.std(aucs)
     print(classification_report(y_trueall, y_pridictall))
-    return y_trueall, y_pridictall,vmats0,vmats1,vmats2
+    return y_trueall, y_pridictall,vmats
 
 #100後から以上の動画を最初の100語を使って文類
-preprocessed_docs = maketextdoc(100,10000000,0,100)
+preprocessed_docs = maketextdoc(0,10000000,0,1000)
 dct = gensim.corpora.Dictionary(preprocessed_docs.values())
 unfiltered = dct.token2id.keys()
 dct.filter_extremes(no_below=3, no_above=0.6)
@@ -161,7 +153,7 @@ for name in preprocessed_docs.keys():
 #LSI
 names = preprocessed_docs.keys()
 lsi_docs = {}
-num_topics = 100
+num_topics = 1000
 lsi_model = gensim.models.LsiModel(bow_docs.values(),
 	id2word=dct.load_from_text('id2word.txt'),
 	num_topics=num_topics)
@@ -202,7 +194,7 @@ print "\nTopics"
 print ldamodel.print_topics()
 unit_vecs = {}
 for name in names:
-	vec = vec2dense(lsi_docs[name], num_topics)
+	vec = vec2dense(lda_docs[name], num_topics)
 	unit_vec = vec/np.linalg.norm(vec)
 	unit_vecs[name] = unit_vec
 	#print name, ":", unit_vec	
@@ -230,8 +222,8 @@ def createtvectorMat(mincomment,maxcomment,unit_vecs,l = l):
                     vectorMat2 = np.c_[vectorMat2,unit_vecs[j]]
     return(vectorMat2.T)
 
-target2 = createtargetarray(500,10000000,10760.0,34544)
-data2 = createtvectorMat(500,10000000,unit_vecs)
+target2 = createtargetarray(1000,10000000,10760.0,34544,l)
+data2 = createtvectorMat(1000,10000000,unit_vecs,l)
 k = PredictAndAnalyze2(data = data2,target = target2)
 k = PredictAndAnalyze2(data = data2,target = target2, clf_cv = svm.LinearSVC())
 
@@ -373,7 +365,18 @@ for number in [200,300,400,500,600,700,800,900,1000]:
 	pickle.dump(k0[2].T,f)
 	f.close()
 
-
+M = k[2].T
+meanvec = np.zeros(1000)
+for j in range(10):
+	meanvec = meanvec + M[j]
+meanvec = meanvec/10.0
+array = {}
+for j in range(1000):
+	array[j] = abs(meanvec[j])
+rankarray = sorted(array.items(),key = lambda x:x[1],reverse = True)
+for v in rankarray[0:20]:
+	print v[0],v[1],meanvec[v[0]]
+	print lsi_model.print_topics(1000)[v[0]]
 
 
 
