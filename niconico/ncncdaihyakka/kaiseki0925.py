@@ -174,8 +174,8 @@ for ID in ["0000","0001","0002","0003","0004","0005","0006"]:
     for j in textinfo[ID].keys():
         #print j
         try:
-            #vectorinfo[ID][j] = createvector(video_id = j, ID = ID,mincount = 0,maxcount = 10000000)
-            vectorinfo[ID][j] = createvector2(video_id = j, ID = ID,count = 500)
+            vectorinfo[ID][j] = createvector(video_id = j, ID = ID,mincount = 500,maxcount = 10000000)
+            #vectorinfo[ID][j] = createvector(video_id = j, ID = ID,count = 500)
         except:
             #vectorinfo[ID][j] = np.zeros(len(model[model.vocab.keys()[0]]))
             print ID,j
@@ -233,6 +233,13 @@ def createtargetarray(mincomment,maxcomment,threadviewcount1,threadviewcount2):
                 else:
                     target2.append(2)
     return np.array(target2)
+
+def createtargeMat(target2):
+    targetMat = np.zeros((len(target2),3))
+    for n in range(len(target2)):
+        targetMat[n][target2[n]] = 1.0
+    return np.array(targetMat)
+targetMat = createtargeMat(target2)
 #２値分類
 def createtargetarray2(mincomment,maxcomment,threadviewcount):
     target2 = []
@@ -268,8 +275,10 @@ def createtvectorMat(mincomment,maxcomment,vectorinfo):
 
 #10760.0と34544
 target2 = createtargetarraycomment(500,5000)
-target2 = createtargetarray(100,10000000,10760.0,34544)
-data2 = createtvectorMat(100,100000000,vectorinfo)
+target2 = createtargetarray(500,10000000,10760.0,34544)
+data2 = createtvectorMat(500,100000000,vectorinfo)
+y = commentarray.values()
+X = 
 
 scores = []
 knn = neighbors.KNeighborsClassifier(n_neighbors=10) #metric='manhattan'
@@ -373,15 +382,95 @@ def PredictAndAnalyze2(data,target,clf_cv = svm.SVC(kernel='linear', probability
     print(classification_report(y_trueall, y_pridictall))
     return y_trueall, y_pridictall,vmats
 
+def PredictAndAnalyze3(data,target,clf_cv = svm.SVC(kernel='linear', probability=True),checkauc = False,ifprint = False,balancing = True):
+    aucs = []
+    y_trueall = []
+    y_pridictall = []
+    length = min([len(target[target == 0]),len(target[target == 1]),len(target[target == 2])])
+    data = np.r_[data[target == 0][0:length],data[target == 1][0:length],data[target == 2][0:length]]
+    target = np.r_[target[target == 0][0:length],target[target == 1][0:length],target[target == 2][0:length]]
+    """
+    length = min([len(target[target == 0]),len(target[target == 1])])
+    data = np.r_[data[target == 0][0:length],data[target == 1][0:length]]
+    target = np.r_[target[target == 0][0:length],target[target == 1][0:length]]
+    """
+    kf = KFold(len(target), n_folds=10, shuffle=True)
+    #vmats = np.array([])
+    for train, val in kf:
+        X_train, y_train = np.array(data)[train], np.array(target)[train]
+        X_test, y_test = np.array(data)[val], np.array(target)[val]
+        clf_cv.fit(X_train, y_train)
+        y_pred = clf_cv.predict(X_test)
+        #vmat = clf_cv.coef_[0]
+        """
+        if vmats.shape[0] == 0:
+            vmats = vmat
+        else:
+            vmats = np.c_[vmats,vmat]
+        """
+        y_true = y_test
+        y_trueall = y_trueall + list(y_true)
+        y_pridictall = y_pridictall  + list(y_pred)
+        if ifprint == True:
+            print(classification_report(y_true, y_pred))
+        if checkauc == True:
+            y_pred_cv = clf_cv.predict_proba(X_test)[:, 1]
+            auc = roc_auc_score(y_test, y_pred_cv)
+            aucs.append(auc)
+    if checkauc == True:
+        print np.mean(aucs), np.std(aucs)
+    print(classification_report(y_trueall, y_pridictall))
+    return y_trueall, y_pridictall#,vmats
+
+def PredictAndAnalyze4(data,targetMat,clf_cv = svm.SVC(kernel='linear', probability=True),checkauc = False,ifprint = False,balancing = True):
+    aucs = []
+    y_trueall = []
+    y_pridictall = []
+    #length = min([len(targetMat[targetMat == 0]),len(targetMat[targetMat == 1]),len(targetMat[targetMat == 2])])
+    #data = np.r_[data[targetMat == 0][0:length],data[targetMat == 1][0:length],data[targetMat == 2][0:length]]
+    #targetMat = np.r_[targetMat[targetMat == [1,0,0]][0:length],targetMat[targetMat == 1][0:length],targetMat[targetMat == 2][0:length]]
+    """
+    length = min([len(targetMat[targetMat == 0]),len(targetMat[targetMat == 1])])
+    data = np.r_[data[targetMat == 0][0:length],data[targetMat == 1][0:length]]
+    targetMat = np.r_[targetMat[targetMat == 0][0:length],targetMat[targetMat == 1][0:length]]
+    """
+    kf = KFold(len(targetMat), n_folds=10, shuffle=True)
+    #vmats = np.array([])
+    for train, val in kf:
+        X_train, y_train = np.array(data)[train], np.array(targetMat)[train]
+        X_test, y_test = np.array(data)[val], np.array(targetMat)[val]
+        clf_cv.fit(X_train, y_train)
+        y_pred = clf_cv.predict(X_test)
+        #vmat = clf_cv.coef_[0]
+        """
+        if vmats.shape[0] == 0:
+            vmats = vmat
+        else:
+            vmats = np.c_[vmats,vmat]
+        """
+        y_true = y_test
+        y_trueall = y_trueall + list(y_true)
+        y_pridictall = y_pridictall  + list(y_pred)
+        if ifprint == True:
+            print(classification_report(y_true, y_pred))
+        if checkauc == True:
+            y_pred_cv = clf_cv.predict_proba(X_test)[:, 1]
+            auc = roc_auc_score(y_test, y_pred_cv)
+            aucs.append(auc)
+    if checkauc == True:
+        print np.mean(aucs), np.std(aucs)
+    print(classification_report(y_trueall, y_pridictall))
+    return y_trueall, y_pridictall#,vmats
+
 data2 = createtvectorMat(500,100000000,vectorinfo2)
-target2 = createtargetarray(500,10000000,10760.0,34544)
+target = createtargetarray(500,10000000,10760.0,34544)
 target2 = createtargetarray2(500,100000000,34544)
 target2 = createtargetarraycomment(0,2170)
-
+targetMat = createtargeMat(target2)
 k0 = PredictAndAnalyze2(data = data2,target = target2,clf_cv = svm.SVC(kernel='rbf', probability=True))#,class_weight={0:4,1:1}))
 #k1 = PredictAndAnalyze2(data2,target2,clf_cv = neighbors.KNeighborsClassifier(n_neighbors=10))
 k2 = PredictAndAnalyze2(data2,target2,clf_cv =linear_model.LogisticRegression(C=1e1))
-
+k = PredictAndAnalyze4(data = data2,target = targetMat,clf_cv = clf_cv)
 
 
 #vector作成
@@ -674,8 +763,8 @@ y_test = y_test[index]
 reg = svm.SVR(kernel='rbf', C=10).fit(x_train, y_train)
 reg = logreg.fit(x_train, y_train)
 # テストデータに対する予測結果のPLOT
-plt.plot(y_test)
-plt.plot(reg.predict(x_test),c = "red")
+plt.plot(y_train)
+plt.plot(reg.predict(X_train),c = "red")
 plt.show()
 # 決定係数R^2
 print reg.score(x_test, y_test)

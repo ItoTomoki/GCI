@@ -65,7 +65,7 @@ vecnamelist = wordclustering(model,voclist)
 features = createwordvecmat(vecnamelist,voclist)
 """
 features = M
-kmeans = KMeans(n_clusters=500, random_state=100)
+kmeans = KMeans(n_clusters=2000, random_state=100)
 kmeans_model = kmeans.fit(features)
 labels = kmeans_model.labels_
 d = zip(labels, features)
@@ -100,11 +100,11 @@ g = file("thread0000-0006.dump","r")
 thread = pickle.load(g)
 g.close()
 
-preprocessed_docs = maketextdoc(0,10000000,0,10000)
+preprocessed_docs = maketextdoc(500,10000000,0,500)
 docvec = {}
 
 for k in preprocessed_docs.keys():
-	docvec[k] = np.zeros(1000)
+	docvec[k] = np.zeros(2000)
 	sentence = preprocessed_docs[k]
 	for m in sentence:
 		try:
@@ -206,18 +206,79 @@ def createtvectorMat2(mincomment,maxcomment,docvec):
 	vectorMat2 = vectorMat2[arrays]
 	return (vectorMat2)
 
+def createtargetMat(mincomment,maxcomment,threadviewcount1,threadviewcount2,docvec):
+	target2 = np.zeros(len(commentarray),3)
+	for k in docvec.keys():
+			if viewarray[k] > threadviewcount2:
+				target2[0].append(0)
+			elif viewarray[k] > threadviewcount1:
+				target2.append(1)
+			else:
+				target2.append(2)
+	if (commentarray[k] > mincomment) & (commentarray[k] < maxcomment):
+	return np.array(target2)
 
 
-
-target2 = createtargetarray(0,10000000,10760.0,34544,docvec)
-data2 = createtvectorMat2(0,10000000,docvec)
+target2 = createtargetarray(500,10000000,10760.0,34544,docvec)
+data2 = createtvectorMat2(500,10000000,docvec)
 length = min([len(target2[target2 == 0]),len(target2[target2 == 1]),len(target2[target2 == 2])])
 data = np.r_[data2[target2 == 0][0:length],data2[target2 == 1][0:length],data2[target2 == 2][0:length]]
 
-k = PredictAndAnalyze2(data = data2,target = target2,clf_cv = svm.LinearSVC())
 
+k = PredictAndAnalyze2(data = data2,target = target2,clf_cv = svm.LinearSVC())
+#GridSearch
+from sklearn import grid_search
+parameters = {
+	'C': [2**(-9),2**(-5),2**(-1),2**(3),2**(7),2**(11),2**(15)],
+	'gamma' : [2**(-11),2**(-7),2**(-3),2**(1),2**(3),2**(5),2**(9)]
+}
+length = min([len(target2[target2 == 0]),len(target2[target2 == 1]),len(target2[target2 == 2])])
+data3 = np.r_[data2[target2 == 0][0:length],data2[target2 == 1][0:length],data2[target2 == 2][0:length]]
+target3 = np.r_[target2[target2 == 0][0:length],target2[target2 == 1][0:length],target2[target2 == 2][0:length]]
+clf = grid_search.GridSearchCV(svm.SVC(),parameters)
+clf.fit(data2,target2)
+print (clf.best_estimator_)
+k = PredictAndAnalyze3(data = data2,target = target2,clf_cv = clf_cv)
+
+def PredictAndAnalyze3(data,target,clf_cv = svm.SVC(kernel='linear', probability=True),checkauc = False,ifprint = False,balancing = True):
+    y_trueall = []
+    y_pridictall = []
+    length = min([len(target[target == 0]),len(target[target == 1]),len(target[target == 2])])
+    data = np.r_[data[target == 0][0:length],data[target == 1][0:length],data[target == 2][0:length]]
+    target = np.r_[target[target == 0][0:length],target[target == 1][0:length],target[target == 2][0:length]]
+    kf = KFold(len(target), n_folds=10, shuffle=True)
+    #vmats = np.array([])
+    for train, val in kf:
+        X_train, y_train = np.array(data)[train], np.array(target)[train]
+        X_test, y_test = np.array(data)[val], np.array(target)[val]
+        clf_cv.fit(X_train, y_train)
+        y_pred = clf_cv.predict(X_test)
+        """
+        vmat = clf_cv.coef_[0]
+        if vmats.shape[0] == 0:
+            vmats = vmat
+        else:
+            vmats = np.c_[vmats,vmat]
+        """
+        y_true = y_test
+        y_trueall = y_trueall + list(y_true)
+        y_pridictall = y_pridictall  + list(y_pred)
+        if ifprint == True:
+            print(classification_report(y_true, y_pred))
+        if checkauc == True:
+            y_pred_cv = clf_cv.predict_proba(X_test)[:, 1]
+            auc = roc_auc_score(y_test, y_pred_cv)
+            aucs.append(auc)
+    if checkauc == True:
+        print np.mean(aucs), np.std(aucs)
+    print(classification_report(y_trueall, y_pridictall))
+    return y_trueall, y_pridictall#,vmats
+
+
+
+#特徴量抽出
 M = k[2].T
-meanvec = np.zeros(1000)
+meanvec = np.zeros(2000)
 for j in range(10):
 	meanvec = meanvec + M[j]
 meanvec = meanvec/10.0
