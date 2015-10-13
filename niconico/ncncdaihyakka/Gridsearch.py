@@ -51,3 +51,10 @@ clf = grid_search.GridSearchCV(svm.SVC(),parameters)
 clf.fit(data3,target3)
 print (clf.best_estimator_)
 k = PredictAndAnalyze3(data = data2,target = target2,clf_cv = clf_cv)
+from sklearn import grid_search
+parameters = {
+	'C': [2**(-9),2**(-5),2**(-1),2**(3),2**(7),2**(11),2**(15)],
+}
+clf = grid_search.GridSearchCV(svm.SVC(),parameters)
+clf.fit(data3,target3)
+k = PredictAndAnalyze3(data = data2,target = target2,clf_cv = svm.LinearSVC(C=10.0))
